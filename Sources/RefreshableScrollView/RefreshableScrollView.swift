@@ -10,20 +10,23 @@ import UIKit
 
 /// A custom scroll view that supports pull to refresh using the `refreshable()` modifier.
 public struct RefreshableScrollView<Content: View>: View {
+  @Binding var isRefreshing: Bool
   let refreshControl: () -> UIRefreshControl
   @ViewBuilder let content: () -> Content
 
   public init(
+    isRefreshing: Binding<Bool>,
     refreshControl: @autoclosure @escaping () -> UIRefreshControl = .init(),
     @ViewBuilder content: @escaping () -> Content
   ) {
+    self._isRefreshing = isRefreshing
     self.refreshControl = refreshControl
     self.content = content
   }
 
   public var body: some View {
     GeometryReader { proxy in
-      ScrollViewControllerRepresentable(refreshControl: refreshControl()) {
+      ScrollViewControllerRepresentable(isRefreshing: _isRefreshing, refreshControl: refreshControl()) {
         content()
           .frame(width: proxy.size.width)
       }
@@ -33,12 +36,17 @@ public struct RefreshableScrollView<Content: View>: View {
 }
 
 struct ScrollViewControllerRepresentable<Content: View>: UIViewControllerRepresentable {
+  @Binding var isRefreshing: Bool
   let refreshControl: UIRefreshControl
   @ViewBuilder let content: () -> Content
   @Environment(\.refresh) private var action
-  @State var isRefreshing: Bool = false
 
-  init(refreshControl: UIRefreshControl, @ViewBuilder content: @escaping () -> Content) {
+  init(
+    isRefreshing: Binding<Bool>,
+    refreshControl: UIRefreshControl,
+    @ViewBuilder content: @escaping () -> Content
+  ) {
+    self._isRefreshing = isRefreshing
     self.refreshControl = refreshControl
     self.content = content
   }
@@ -67,9 +75,7 @@ struct ScrollViewControllerRepresentable<Content: View>: UIViewControllerReprese
 
   func refresh() {
     Task {
-      isRefreshing = true
       await action?()
-      isRefreshing = false
     }
   }
 }

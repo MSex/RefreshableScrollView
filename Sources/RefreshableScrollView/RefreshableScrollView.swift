@@ -30,7 +30,6 @@ public struct RefreshableScrollView<Content: View>: View {
         content()
           .frame(width: proxy.size.width)
       }
-      .ignoresSafeArea()
     }
   }
 }
@@ -68,6 +67,10 @@ struct ScrollViewControllerRepresentable<Content: View>: UIViewControllerReprese
 
     if isRefreshing {
       viewController.refreshControl.beginRefreshing()
+      let refreshHeight = viewController.refreshControl.frame.size.height
+      if (viewController.scrollView.contentOffset.y > -refreshHeight) {
+          viewController.scrollView.setContentOffset(CGPoint(x: 0, y: -refreshHeight), animated: true)
+      }
     } else {
       viewController.refreshControl.endRefreshing()
     }
